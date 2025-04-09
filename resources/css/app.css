@@ -1,0 +1,28 @@
+/* Define Local Font: Cinzel */
+@font-face {
+    font-family: 'Cinzel';
+    font-style: normal;
+    font-weight: 400; /* Regular weight */
+    font-display: swap;
+    src: url('../fonts/Cinzel-Regular.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'Cinzel';
+    font-style: normal;
+    font-weight: 700; /* Bold weight */
+    font-display: swap;
+    src: url('../fonts/Cinzel-Bold.ttf') format('truetype');
+}
+
+/* Tailwind Directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Apply Cinzel font to headings AND body */
+body {
+    @apply font-cinzel; /* Apply to body */
+}
+h1, h2, h3, h4 {
+    @apply font-cinzel font-bold; /* Ensure headings remain distinct, maybe bold */
+}
