@@ -54,15 +54,38 @@
                                     <div title="Tribe"> <dt class="text-xs uppercase tracking-wider font-semibold text-viking-steel flex items-center space-x-1.5"><i class="fa-solid fa-users fa-fw"></i><span>Tribe</span></dt> <dd class="mt-1 text-sm text-viking-parchment">{{ $user->currentTribe?->name ?? 'No Tribe Sworn' }}</dd> </div>
                                     <div title="Rank"> <dt class="text-xs uppercase tracking-wider font-semibold text-viking-steel flex items-center space-x-1.5"><i class="fa-solid fa-award fa-fw"></i><span>Standing</span></dt> <dd class="mt-1 text-sm text-viking-parchment">{{ $user->honourRank?->name ?? 'Unproven' }}</dd> </div>
                                 </dl>
-                                 {{-- Leave Kingdom Action --}}
-                                 @if ($user->current_kingdom_id && !$user->isKing())
+                                {{-- Leave Kingdom Action --}}
+                                @if (Auth::user()->current_kingdom_id && !Auth::user()->isKing())
                                     <div class="mt-6 pt-4 border-t border-viking-steel/30">
-                                        <button @click="openModal = 'leaveKingdom'" type="button" class="inline-flex items-center px-4 py-2 bg-viking-blood border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-viking-blood/80 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-viking-dark transition ease-in-out duration-150 shadow-md hover:shadow-lg focus:shadow-outline active:scale-95">
-                                            <i class="fa-solid fa-door-open mr-2"></i> {{ __('Forsake Allegiance') }}
-                                        </button>
+                                        <h3 class="text-lg font-medium text-viking-parchment mb-1">Forsake Allegiance</h3>
+                                        <p class="mt-1 text-sm text-viking-steel mb-3">
+                                            If you choose to leave your current kingdom, you will also be removed from any tribe you are currently a member of.
+                                        </p>
+                                        <form method="POST" action="{{ route('kingdom.leave') }}">
+                                            @csrf
+                                            <x-danger-button type="submit" onclick="return confirm('Are you sure you want to leave your kingdom? This will also remove you from your current tribe if you are in one.');">
+                                                <i class="fa-solid fa-door-open mr-2"></i> Leave Current Kingdom
+                                            </x-danger-button>
+                                        </form>
                                     </div>
-                                @elseif ($user->isKing() && $user->current_kingdom_id)
+                                @elseif (Auth::user()->isKing() && Auth::user()->current_kingdom_id)
                                      <div class="mt-6 pt-4 border-t border-viking-steel/30 text-sm text-viking-steel italic"> Kings must abdicate or use other means to leave their kingdom. </div>
+                                @endif
+
+                                {{-- Leave Tribe Action --}}
+                                @if (Auth::user()->current_tribe_id)
+                                    <div class="mt-6 pt-4 border-t border-viking-steel/30">
+                                        <h3 class="text-lg font-medium text-viking-parchment mb-1">Forsake Brotherhood</h3>
+                                        <p class="mt-1 text-sm text-viking-steel mb-3">
+                                            You are currently a member of: {{ Auth::user()->currentTribe->name ?? 'a tribe' }}.
+                                        </p>
+                                        <form method="POST" action="{{ route('tribe.leave') }}">
+                                            @csrf
+                                            <x-danger-button type="submit" onclick="return confirm('Are you sure you want to leave your current tribe?');">
+                                                <i class="fa-solid fa-users-slash mr-2"></i> Leave Current Tribe
+                                            </x-danger-button>
+                                        </form>
+                                    </div>
                                 @endif
                             </div>
                         </div> {{-- End User Status Panel --}}
@@ -81,14 +104,19 @@
                          @if($user->isKing() && isset($kingsKingdom) && $kingsKingdom)
                              <div class="bg-viking-stone/90 border border-viking-steel/40 shadow-lg rounded-lg overflow-hidden relative">
                                  <div class="p-6">
-                                     <h4 class="text-md font-semibold text-viking-parchment mb-4 border-b border-viking-steel/30 pb-2 flex items-center space-x-2"> <i class="fa-solid fa-crown text-viking-gold w-5 text-center"></i> <span>Jarl's Decree ({{$kingsKingdom->name}})</span> </h4>
+                                     <h4 class="text-md font-semibold text-viking-parchment mb-4 border-b border-viking-steel/30 pb-2">
+                                         <a href="{{ route('king.dashboard') }}" class="hover:underline flex items-center space-x-2" title="Access your King Dashboard">
+                                             <i class="fa-solid fa-crown text-viking-gold w-5 text-center"></i>
+                                             <span>Jarl's Decree ({{ $kingsKingdom->name }})</span>
+                                         </a>
+                                     </h4>
                                      <div class="space-y-3">
-                                         {{-- Link to separate Kingdom request page --}}
-                                         {{-- Use $pendingKingdomJoinRequests passed from route --}}
+                                         @if($pendingKingdomJoinRequests->count() > 0)
+                                             <p class="text-sm text-viking-steel">You have {{ $pendingKingdomJoinRequests->count() }} pending join requests for your kingdom.</p>
+                                         @endif
                                          <a href="{{ route('kingdom.management.requests.index') }}" class="w-full text-left block px-3 py-2 bg-viking-dark/30 hover:bg-viking-dark/50 rounded text-sm text-viking-parchment transition duration-150 ease-in-out flex items-center justify-between shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-viking-gold">
                                              <span class="flex items-center space-x-2"><i class="fa-solid fa-scroll fa-fw text-viking-blue"></i><span>Manage Kingdom Petitions</span></span>
-                                             {{-- Check variable exists before calling count() --}}
-                                             <span class="text-xs bg-viking-blood text-white rounded-full px-1.5 py-0.5">{{ isset($pendingKingdomJoinRequests) ? $pendingKingdomJoinRequests->count() : '0' }}</span>
+                                             <span class="text-xs bg-viking-blood text-white rounded-full px-1.5 py-0.5">{{ $pendingKingdomJoinRequests->count() }}</span>
                                          </a>
                                          {{-- Button triggers editKingdom modal --}}
                                          @can('update', $kingsKingdom)
@@ -109,13 +137,19 @@
                           @if($user->isThaneOfAnyTribe() && isset($thanesTribe) && $thanesTribe)
                               <div class="bg-viking-stone/90 border border-viking-steel/40 shadow-lg rounded-lg overflow-hidden relative">
                                   <div class="p-6">
-                                      <h4 class="text-md font-semibold text-viking-parchment mb-4 border-b border-viking-steel/30 pb-2 flex items-center space-x-2"> <i class="fa-solid fa-users-rays text-viking-gold w-5 text-center"></i> <span>Thane's Hearth ({{$thanesTribe->name}})</span> </h4>
+                                      <h4 class="text-md font-semibold text-viking-parchment mb-4 border-b border-viking-steel/30 pb-2">
+                                           <a href="{{ route('tribe-requests.index') }}" class="hover:underline flex items-center space-x-2" title="Manage your Tribe">
+                                               <i class="fa-solid fa-users-rays text-viking-gold w-5 text-center"></i>
+                                               <span>Thane's Hearth ({{ $thanesTribe->name }})</span>
+                                           </a>
+                                      </h4>
                                       <div class="space-y-3">
-                                          {{-- Link to separate Tribe request page --}}
+                                          @if($pendingTribeJoinRequests->count() > 0)
+                                            <p class="text-sm text-viking-steel">You have {{ $pendingTribeJoinRequests->count() }} pending join requests for your tribe.</p>
+                                          @endif
                                           <a href="{{ route('tribe-requests.index') }}" class="w-full text-left block px-3 py-2 bg-viking-dark/30 hover:bg-viking-dark/50 rounded text-sm text-viking-parchment transition duration-150 ease-in-out flex items-center justify-between shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-viking-gold">
                                               <span class="flex items-center space-x-2"><i class="fa-solid fa-user-plus fa-fw text-viking-blue"></i><span>Manage Tribe Petitions</span></span>
-                                              {{-- Use $pendingTribeRequests passed from route --}}
-                                              <span class="text-xs bg-viking-blood text-white rounded-full px-1.5 py-0.5">{{ isset($pendingTribeRequests) ? $pendingTribeRequests->count() : '0' }}</span>
+                                              <span class="text-xs bg-viking-blood text-white rounded-full px-1.5 py-0.5">{{ $pendingTribeJoinRequests->count() }}</span>
                                           </a>
                                            @can('update', $thanesTribe)
                                              <a href="{{ route('tribes.edit', $thanesTribe) }}" class="w-full text-left block px-3 py-2 bg-viking-dark/30 hover:bg-viking-dark/50 ..."> <i class="fa-solid fa-pencil ..."></i><span>Shape Tribe</span> </a>
@@ -139,8 +173,8 @@
 
 
         {{-- MODAL DEFINITIONS --}}
-        {{-- Leave Kingdom Modal --}}
-        <div x-show="openModal === 'leaveKingdom'" x-transition ... > ... </div>
+        {{-- Leave Kingdom Modal (REMOVED as per new requirement) --}}
+        {{-- <div x-show="openModal === 'leaveKingdom'" x-transition ... > ... </div> --}}
         {{-- Edit Kingdom Modal --}}
         <div x-show="openModal === 'editKingdom'" x-transition ... > ... </div>
         {{-- Create Kingdom Modal --}}

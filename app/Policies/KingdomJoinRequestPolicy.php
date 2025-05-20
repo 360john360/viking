@@ -19,8 +19,8 @@ class KingdomJoinRequestPolicy
         // Eager load kingdom relationship if not already loaded for efficiency
         $joinRequest->loadMissing('kingdom');
 
-        // Check if the kingdom exists and if the user is the king of that kingdom
-        return $joinRequest->kingdom && $joinRequest->kingdom->king_user_id === $user->id;
+        // Check if the kingdom exists and if the user is the king of that kingdom or a kingdom moderator
+        return $joinRequest->kingdom && (($joinRequest->kingdom->king_user_id === $user->id) || $user->isKingdomModerator($joinRequest->kingdom));
     }
 
     /**
@@ -32,8 +32,8 @@ class KingdomJoinRequestPolicy
          // Eager load kingdom relationship if not already loaded
          $joinRequest->loadMissing('kingdom');
 
-         // Same logic as approve for now
-         return $joinRequest->kingdom && $joinRequest->kingdom->king_user_id === $user->id;
+         // Same logic as approve
+         return $joinRequest->kingdom && (($joinRequest->kingdom->king_user_id === $user->id) || $user->isKingdomModerator($joinRequest->kingdom));
     }
 
 

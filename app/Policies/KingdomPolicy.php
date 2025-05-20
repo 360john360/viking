@@ -77,4 +77,74 @@ class KingdomPolicy
          // Only Site Admins can force delete kingdoms
          return $user->isSiteAdmin(); // <-- MODIFIED (Assuming only admins)
     }
+
+    // --- New RBAC Policy Methods ---
+
+    public function manageMembers(User $user, Kingdom $kingdom): bool
+    {
+        // King of this kingdom or a Kingdom Moderator of this kingdom
+        return ($user->id === $kingdom->king_user_id) || $user->isKingdomModerator($kingdom);
+    }
+
+    public function manageModerators(User $user, Kingdom $kingdom): bool
+    {
+        // Only the King of this kingdom
+        return $user->id === $kingdom->king_user_id;
+    }
+
+    public function setPolicy(User $user, Kingdom $kingdom): bool
+    {
+        // Only the King of this kingdom
+        return $user->id === $kingdom->king_user_id;
+    }
+
+    public function setTax(User $user, Kingdom $kingdom): bool
+    {
+        // Only the King of this kingdom
+        return $user->id === $kingdom->king_user_id;
+    }
+
+    public function manageTreasury(User $user, Kingdom $kingdom): bool
+    {
+        // Only the King of this kingdom
+        return $user->id === $kingdom->king_user_id;
+    }
+
+    public function declareInternalWar(User $user, Kingdom $kingdom): bool // Assuming 'kingdom.declare_war' means internal
+    {
+        // Only the King of this kingdom
+        return $user->id === $kingdom->king_user_id;
+    }
+
+    /**
+     * Determine whether the user can create a king claim for the kingdom.
+     */
+    public function createClaim(User $user, Kingdom $kingdom): bool
+    {
+        // Already checked for auth in controller, this is for the general ability
+        if (!$user->is_king_candidate_verified) {
+            return false;
+        }
+        if (!$kingdom->is_active || $kingdom->king_user_id !== null) {
+            return false; // Kingdom not active or already has a king
+        }
+        // Check for existing pending claim by this user for THIS kingdom
+        // Note: KingClaim model needs to be imported or fully qualified if not. Assuming it's available.
+        // For this policy, we also need to ensure the user doesn't have *any* other pending claim.
+        if (\App\Models\KingClaim::where('user_id', $user->id)->where('status', 'pending')->exists()) {
+            // This covers both a claim for this kingdom or any other kingdom.
+            return false; 
+        }
+        // Check for 'kingdom_join' cooldown
+        // Note: UserCooldown model needs to be imported or fully qualified if not. Assuming it's available.
+        if ($user->cooldowns()->where('cooldown_type', 'kingdom_join')->where('expires_at', '>', now())->exists()) {
+            return false;
+        }
+        // Optional: Check if user is already a king of another kingdom
+        if ($user->isKing()) { // isKing() helper assumed to be on User model
+            return false;
+        }
+
+        return true;
+    }
 }

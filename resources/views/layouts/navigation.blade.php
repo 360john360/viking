@@ -23,6 +23,12 @@
                          <i class="fa-solid fa-users mr-1"></i> {{ __('Tribes') }}
                      </x-nav-link>
                      {{-- Add other primary navigation links later (Sagas, Longhouse, etc) --}}
+
+                    @can('accessKingDashboard', App\Models\User::class)
+                        <x-nav-link :href="route('king.dashboard')" :active="request()->routeIs('king.dashboard')" class="text-viking-parchment hover:text-viking-gold focus:text-viking-gold border-viking-gold focus:border-viking-gold">
+                            <i class="fa-solid fa-chess-king mr-1"></i> {{ __('King Dashboard') }}
+                        </x-nav-link>
+                    @endcan
                 </div>
             </div>
 
@@ -82,6 +88,12 @@
               <x-responsive-nav-link :href="route('tribes.index')" :active="request()->routeIs('tribes.*')" class="text-viking-parchment hover:text-viking-gold focus:text-viking-gold border-viking-gold focus:border-viking-gold">
                  {{ __('Tribes') }}
              </x-responsive-nav-link>
+
+            @can('accessKingDashboard', App\Models\User::class)
+                <x-responsive-nav-link :href="route('king.dashboard')" :active="request()->routeIs('king.dashboard')" class="text-viking-parchment hover:text-viking-gold focus:text-viking-gold border-viking-gold focus:border-viking-gold">
+                    {{ __('King Dashboard') }}
+                </x-responsive-nav-link>
+            @endcan
         </div>
 
         <div class="pt-4 pb-1 border-t border-viking-steel/70">
