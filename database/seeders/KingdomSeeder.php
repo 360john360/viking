@@ -6,6 +6,7 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Kingdom;
 use App\Models\User; // <-- Import User model
+use App\Models\KingdomMembership; // <-- Import KingdomMembership model
 use Illuminate\Support\Facades\DB; // <-- Import DB Facade for transaction
 use Illuminate\Support\Facades\Log; // <-- Import Log facade for debugging
 
@@ -48,6 +49,16 @@ class KingdomSeeder extends Seeder
                 // emblem_url is nullable, keep as null unless you have one
             ]);
             Log::info("KingdomSeeder: Created Kingdom '{$kingdom1->name}' (ID {$kingdom1->id}) with King ID: " . ($kingUserId ?? 'None'));
+
+            if ($kingUserId) {
+                KingdomMembership::create([
+                    'user_id' => $kingUserId,
+                    'kingdom_id' => $kingdom1->id,
+                    'role' => 'king',
+                    'joined_at' => now(),
+                ]);
+                Log::info("KingdomSeeder: Created KingdomMembership for King ID {$kingUserId} in Kingdom ID {$kingdom1->id}.");
+            }
 
             // Create Active Kingdom 2 (without a king initially)
             $kingdom2 = Kingdom::create([

@@ -93,4 +93,28 @@ class User extends Authenticatable // implements MustVerifyEmail (if needed late
     public function hasPendingTribeRequest(Tribe $tribe): bool {
          return $this->tribeJoinRequests()->where('tribe_id', $tribe->id)->where('status', 'pending')->exists(); // Use relationship
     }
+
+    // --- New RBAC Helper Methods ---
+    public function isSiteModerator(): bool
+    {
+        return $this->is_site_moderator ?? false;
+    }
+
+    public function isKingdomModerator(Kingdom $kingdom): bool
+    {
+        if (!$this->kingdomMembership) { // Assumes kingdomMembership is HasOne
+            return false;
+        }
+        return $this->kingdomMembership->kingdom_id === $kingdom->id && $this->kingdomMembership->role === 'moderator';
+    }
+
+    public function isMemberOfKingdom(Kingdom $kingdom): bool
+    {
+        return $this->current_kingdom_id === $kingdom->id;
+    }
+
+    public function isMemberOfTribe(Tribe $tribe): bool
+    {
+        return $this->current_tribe_id === $tribe->id;
+    }
 }

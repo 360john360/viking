@@ -12,13 +12,15 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // \App\Models\User::factory(10)->create();
+        // \App\Models\User::factory(10)->create(); // Ensure this remains commented if UserSeeder is primary
 
         // Call the seeder(s) you want to run
         $this->call([
-            HonourRanksSeeder::class,
-            SiteSettingsSeeder::class,
-            KingdomSeeder::class, // <-- Added this line
+            UserSeeder::class,          // Ensures users exist first
+            HonourRanksSeeder::class,   // Independent, can run early
+            SiteSettingsSeeder::class,  // Independent, can run early
+            KingdomSeeder::class,       // Depends on Users
+            TribeSeeder::class,         // Depends on Users and Kingdoms
         ]);
     }
 }

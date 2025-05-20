@@ -35,15 +35,33 @@
                          {{-- Add more details later (members count, tribes etc) --}}
                     </dl>
 
+                    {{-- Claim Kingdom Button --}}
+                    @can('createClaim', $kingdom)
+                        <div class="mt-6">
+                            <a href="{{ route('king_claims.create', $kingdom) }}" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-500 active:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
+                                <i class="fa-solid fa-crown mr-2"></i> {{ __('Claim This Kingdom') }}
+                            </a>
+                        </div>
+                    @endcan
+
                      {{-- Request to Join Button/Form --}}
                     <div class="mt-6">
                          @auth
-                            @if (Auth::user()->current_kingdom_id === null)
-                                <form method="POST" action="{{ route('kingdoms.join.request', $kingdom) }}">
-                                    @csrf
-                                    {{-- Using a styled button component potentially from Breeze --}}
-                                    <x-primary-button>Request to Join This Kingdom</x-primary-button>
-                                </form>
+                            {{-- User can only request to join if they are not part of any kingdom AND the kingdom is claimable (no king) OR has a king (normal join) --}}
+                            {{-- The 'createClaim' policy already covers many conditions. Here we just check general join eligibility. --}}
+                            @if (Auth::user()->current_kingdom_id === null && $kingdom->is_active)
+                                {{-- Specific check to prevent join request if kingdom is claimable (has no king)
+                                     Users should use the "Claim This Kingdom" button in that specific scenario.
+                                     They can request to join if there IS a king. --}}
+                                @if ($kingdom->king_user_id !== null)
+                                    <form method="POST" action="{{ route('kingdoms.join.request', $kingdom) }}">
+                                        @csrf
+                                        <x-primary-button>Request to Join This Kingdom</x-primary-button>
+                                    </form>
+                                @elseif (!$kingdom->king_user_id && !Auth::user()->can('createClaim', $kingdom))
+                                    {{-- If kingdom has no king, but user CANNOT claim (e.g. not verified), show info --}}
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 italic">This kingdom is currently without a ruler. Only verified candidates may attempt to claim it.</p>
+                                @endif
                             @elseif (Auth::user()->current_kingdom_id === $kingdom->id)
                                  <p class="text-sm text-gray-600 dark:text-gray-400 italic">You are currently a member of this kingdom.</p>
                             @else

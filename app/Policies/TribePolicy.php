@@ -33,13 +33,16 @@ class TribePolicy
 
     public function create(User $user): bool
     {
-        return $user->isSiteAdmin();
+        // Site Admin OR any King can generally create tribes (controller handles context)
+        return $user->isSiteAdmin() || $user->isKing();
     }
 
     public function update(User $user, Tribe $tribe): bool
     {
-        $tribe->loadMissing('kingdom:id,king_user_id');
-        return $user->isSiteAdmin() || ($tribe->kingdom && $user->id === $tribe->kingdom->king_user_id);
+        $tribe->loadMissing('kingdom:id,king_user_id'); // Ensure kingdom data is loaded
+        return $user->isSiteAdmin() || 
+               ($tribe->kingdom && $user->id === $tribe->kingdom->king_user_id) || 
+               ($user->id === $tribe->leader_user_id);
     }
 
     public function delete(User $user, Tribe $tribe): bool
@@ -55,5 +58,24 @@ class TribePolicy
     public function forceDelete(User $user, Tribe $tribe): bool
     {
         return false;
+    }
+
+    public function manageMembers(User $user, Tribe $tribe): bool
+    {
+        // Site Admin, King of parent Kingdom, Tribe Leader, or Tribe Officer of this tribe
+        $tribe->loadMissing('kingdom:id,king_user_id');
+        return $user->isSiteAdmin() ||
+               ($tribe->kingdom && $user->id === $tribe->kingdom->king_user_id) ||
+               $user->id === $tribe->leader_user_id || 
+               $user->isTribeOfficer($tribe);
+    }
+
+    public function manageOfficers(User $user, Tribe $tribe): bool
+    {
+        // Site Admin, King of parent Kingdom, or Tribe Leader of this tribe
+        $tribe->loadMissing('kingdom:id,king_user_id');
+        return $user->isSiteAdmin() ||
+               ($tribe->kingdom && $user->id === $tribe->kingdom->king_user_id) ||
+               ($user->id === $tribe->leader_user_id);
     }
 }

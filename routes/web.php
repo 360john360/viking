@@ -9,6 +9,7 @@ use App\Http\Controllers\KingdomMembershipController;
 use App\Http\Controllers\TribeController;
 use App\Http\Controllers\TribeMembershipController;
 use App\Http\Controllers\TribeJoinRequestController; // Ensures this is imported
+use App\Http\Controllers\KingClaimController; // Import KingClaimController
 
 // Required Models & Facades for Dashboard Route Closure
 use Illuminate\Support\Facades\Auth;
@@ -87,19 +88,27 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Kingdom Resource routes (excluding destroy)
-    Route::resource('kingdoms', KingdomController::class)->except(['destroy']);
+    // Kingdom Routes
+    Route::get('/kingdoms/create', [KingdomController::class, 'create'])->name('kingdoms.create')->middleware('can:create,App\Models\Kingdom');
+    Route::post('/kingdoms', [KingdomController::class, 'store'])->name('kingdoms.store')->middleware('can:create,App\Models\Kingdom');
+    Route::resource('kingdoms', KingdomController::class)->except(['destroy', 'create', 'store']);
 
     // Kingdom Join/Leave routes
-    Route::post('/kingdoms/{kingdom}/join', [KingdomController::class, 'requestToJoin'])->name('kingdoms.join.request');
+    Route::post('/kingdoms/{kingdom}/join', [KingdomController::class, 'requestToJoin'])->name('kingdoms.join.request'); // This one seems like it might belong to KingdomMembershipController or a dedicated JoinController
     Route::post('/kingdom/leave', [KingdomMembershipController::class, 'leave'])->name('kingdom.leave');
 
-    // Tribe Resource Routes (excluding destroy)
-    Route::resource('tribes', TribeController::class)->except(['destroy']);
+    // Tribe Routes
+    Route::get('/tribes/create', [TribeController::class, 'create'])->name('tribes.create')->middleware('can:create,App\Models\Tribe');
+    Route::post('/tribes', [TribeController::class, 'store'])->name('tribes.store')->middleware('can:create,App\Models\Tribe');
+    Route::resource('tribes', TribeController::class)->except(['destroy', 'create', 'store']);
 
     // Tribe Join/Leave routes
     Route::post('/tribes/{tribe}/join', [TribeMembershipController::class, 'requestToJoin'])->name('tribes.join.request');
-    // TODO: Route::post('/tribe/leave', [TribeMembershipController::class, 'leaveTribe'])->name('tribe.leave');
+    Route::post('/tribe/leave', [TribeMembershipController::class, 'leaveTribe'])->name('tribe.leave');
+
+    // King Claim Routes
+    Route::get('/kingdoms/{kingdom}/claim', [KingClaimController::class, 'create'])->name('king_claims.create');
+    Route::post('/kingdoms/{kingdom}/claim', [KingClaimController::class, 'store'])->name('king_claims.store');
 
     // Kingdom Join Request Management Routes (for King) - Separate Page
     Route::prefix('kingdom-management')->name('kingdom.management.')->group(function () {
@@ -107,7 +116,9 @@ Route::middleware('auth')->group(function () {
             Route::patch('/requests/{joinRequest}/approve', [KingdomJoinRequestController::class, 'approve'])->name('requests.approve');
             Route::patch('/requests/{joinRequest}/reject', [KingdomJoinRequestController::class, 'reject'])->name('requests.reject');
     });
-    Route::get('/king/dashboard', [KingDashboardController::class, 'index'])->name('king.dashboard');
+     Route::get('/king/dashboard', [KingDashboardController::class, 'index'])
+         ->name('king.dashboard')
+         ->middleware('can:accessKingDashboard,App\Models\User');
 
 
     // Tribe Join Request Management Routes (for Thane/Officer) - Separate Page

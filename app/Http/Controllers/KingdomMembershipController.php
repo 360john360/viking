@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use App\Events\UserLeftKingdom; // Import the event
 
 class KingdomMembershipController extends Controller
 {
@@ -74,7 +75,10 @@ class KingdomMembershipController extends Controller
                     'reason_kingdom_id' => $leavingKingdomId,
                 ]);
 
-                Log::info("User Left Kingdom: User {$user->id} left Kingdom {$leavingKingdomId}. Cooldown applied for {$cooldownDays} days.");
+                // Dispatch the event
+                UserLeftKingdom::dispatch($user, $leavingKingdomId);
+
+                Log::info("User Left Kingdom: User {$user->id} left Kingdom {$leavingKingdomId}. Cooldown applied for {$cooldownDays} days. UserLeftKingdom event dispatched.");
             });
 
             // 5. Redirect with success

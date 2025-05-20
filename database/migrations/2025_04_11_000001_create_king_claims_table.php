@@ -9,29 +9,29 @@ return new class extends Migration
     /**
      * Run the migrations.
      *
-     * Defines the structure of the 'kingdom_memberships' table, linking users to kingdoms.
+     * @return void
      */
-    public function up(): void
+    public function up()
     {
-        Schema::create('kingdom_memberships', function (Blueprint $table) {
+        Schema::create('king_claims', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('kingdom_id')->constrained('kingdoms')->onDelete('cascade');
-            $table->enum('role', ['member', 'moderator', 'king'])->default('member');
-            $table->timestamp('joined_at')->nullable();
+            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
+            $table->text('reasoning')->nullable();
             $table->timestamps();
 
-            $table->unique(['user_id']);
+            $table->unique(['user_id', 'kingdom_id']);
         });
     }
 
     /**
      * Reverse the migrations.
      *
-     * Drops the 'kingdom_memberships' table if it exists.
+     * @return void
      */
-    public function down(): void
+    public function down()
     {
-        Schema::dropIfExists('kingdom_memberships');
+        Schema::dropIfExists('king_claims');
     }
 };
